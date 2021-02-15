@@ -1,0 +1,54 @@
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: app-keda-scale
+  labels:
+    application: app-scale
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      application: app-scale
+  template:
+    metadata:
+      labels:
+        application: app-scale
+    spec:
+      containers:
+        - name: app-scale
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          image: app_image:0.0.1
+          imagePullPolicy: Never
+          ports:
+          - containerPort: 4000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-keda-scale
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "4000"
+    prometheus.io/path: "/metrics"
+  labels:
+    application: app-scale
+spec:
+  ports:
+    port: 4000
+    targetPort: 4000
+  selector:
+    application: app-scale
+  type: LoadBalancer
